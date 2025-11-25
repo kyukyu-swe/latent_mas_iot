@@ -14,22 +14,19 @@ Latent Collaboration in Multi-Agent Systems
 
 <p align="center">
     <a href=""><img src="https://img.shields.io/badge/arXiv-2510.05592-B31B1B.svg?logo=arxiv" alt="Arxiv"></a>
-    <a href="https://huggingface.co/papers/2510.05592"><img src="https://img.shields.io/badge/Huggingface-Paper-FFD21E.svg?logo=huggingface" alt="Huggingface Paper"></a>
-    <a href="https://github.com/Gen-Verse/LatentMAS"><img src="https://img.shields.io/badge/GitHub-Repo-181717.svg?logo=github" alt="GitHub Repo"></a>
+    <a href="https://huggingface.co/papers/2510.05592"><img src="https://img.shields.io/badge/Huggingface-DailyPaper-FFD21E.svg?logo=huggingface" alt="Huggingface Paper"></a>
+    <a href="https://x.com/LingYang_PU"><img src="https://img.shields.io/badge/Coverage-LatentMAS-2176BC.svg?logo=x" alt="X"></a>
   
   </p>
 
 
 
-
+<p align="center">
+  <img src="assets/main_res.png" width="1000">
+</p>
 
 ## 💡 Introduction
 
-<p align="center">
-  <img src="assets/main.png" width="1000">
-</p>
-
-### Method Overview 
 
 **LatentMAS** is a multi-agent reasoning framework that **moves agent collaboration from token space into the model’s latent space**.  
 Instead of producing long textual reasoning traces, agents communicate by **passing latent thoughts** through their own **working memory**. LatentMAS has the following key features:
@@ -41,8 +38,9 @@ Instead of producing long textual reasoning traces, agents communicate by **pass
 Overall, LatentMAS achieves **superior performance**, **lower token usage**, and **major wall-clock speedups** of multi-agent system.
 
 <p align="center">
-  <img src="assets/main_res.png" width="1000">
+  <img src="assets/main.png" width="1000">
 </p>
+
 
 ## 🔔 News
 
@@ -223,11 +221,11 @@ CUDA_VISIBLE_DEVICES=0,1 python run.py --method latent_mas --model_name Qwen/Qwe
 💫 If you find **LatentMAS** helpful, please kindly give us a star ⭐️ and cite below. Thanks!
 
 ```
-@article{latentmas,
+@article{zou2025latentmas,
   title={Latent Collaboration in Multi-Agent Systems},
-  author={ Zou, Jiaru and Yang, Xiyuan and Qiu, Ruizhong and Li, Gaotang and Tieu, Katherine and Lu, Pan and Shen, Ke and Tong, Hanghang and Choi, Yejin and He, Jingrui and Zou, James and Wang, Mengdi and Yang, Ling },
-  year={2025},
-  journal={Preprint}
+  author={Zou, Jiaru and Yang, Xiyuan and Qiu, Ruizhong and Li, Gaotang and Tieu, Katherine and Lu, Pan and Shen, Ke and Tong, Hanghang and Choi, Yejin and He, Jingrui and Zou, James and Wang, Mengdi and Yang, Ling},
+  journal={Preprint},
+  year={2025}
 }
 ```
 

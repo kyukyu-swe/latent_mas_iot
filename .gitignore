@@ -1,7 +1,0 @@
-__pycache__/
-logs/
-*.pyc
-initial.sh
-nohup.out
-test/
-*.txt
