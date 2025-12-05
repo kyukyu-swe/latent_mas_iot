@@ -137,21 +137,21 @@ LatentMAS/
 ### 🔹 **Baseline (single model)**
 
 ```bash
-python run.py --method baseline --model_name Qwen/Qwen3-14B --task gsm8k --max_samples 100
+python run.py --method baseline --model_name Qwen/Qwen3-14B --task gsm8k --max_samples -1
 ```
 
 
 ### 🔹 **TextMAS (text based multi-agent system)**
 
 ```bash
-python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples 100
+python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples -1
 ```
 
 
 ### 🔹 **LatentMAS (our latent mas method)**
 
 ```bash
-python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --latent_steps 20 --prompt sequential --max_samples 100
+python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples -1
 ```
 
 #### Notes:
@@ -163,7 +163,7 @@ python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --lat
   We treat this as a **hyperparameter** — enable/disable depending on task/model:
 
 ```bash
-python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --latent_steps 20 --prompt sequential --max_samples 100 --latent_space_realign
+python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples -1 --latent_space_realign
 ```
 
 
@@ -174,6 +174,8 @@ Two example LatentMAS logs are provided for reference purposes:
 * `example_logs/qwen3_14b_mbppplus_sequential.txt`
 * `example_logs/qwen3_14b_humanevalplus_hierarchical.txt`
 
+
+Please refer to additional experiment logs [here](https://drive.google.com/drive/folders/1evGv5YAmLb4YM_D9Yu0ABa1nfqHC5N-l?usp=drive_link).
 You can open them to view the full agent interaction traces and outputs.
 
 
@@ -184,13 +186,13 @@ LatentMAS supports vLLM for faster inference.
 ### 🔹 Baseline with vLLM
 
 ```bash
-python run.py --method baseline --model_name Qwen/Qwen3-14B --task gsm8k --max_samples 100 --use_vllm
+python run.py --method baseline --model_name Qwen/Qwen3-14B --task gsm8k --max_samples -1 --use_vllm
 ```
 
 ### 🔹 TextMAS with vLLM
 
 ```bash
-python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples 100 --use_vllm
+python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples -1 --use_vllm
 ```
 
 ### 🔹 LatentMAS with vLLM
@@ -204,7 +206,7 @@ For this setup, we recommend using two GPUs:
 - One GPU for the auxiliary HF model (`--device2`, e.g., `cuda:1`)
 
 ```bash
-CUDA_VISIBLE_DEVICES=0,1 python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --latent_steps 20 --prompt sequential --max_samples 100 \
+CUDA_VISIBLE_DEVICES=0,1 python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples -1 \
   --use_vllm \
   --use_second_HF_model \
   --enable_prefix_caching \
