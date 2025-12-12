@@ -109,7 +109,7 @@ pip install vllm
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YourRepo/LatentMAS.git
+git clone https://github.com/Gen-Verse/LatentMAS.git
 cd LatentMAS
 ```
 
