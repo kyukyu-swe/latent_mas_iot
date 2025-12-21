@@ -13,8 +13,7 @@ The original homogeneous setting resembles recursive Chain-of-Thought (CoT). The
 To enable latent communication between different models without training adapters, we extend the linear alignment mechanism. We align Model A's output to Model B's input space via their shared vocabulary.
 
 **The Math:**
-The original alignment (Eq. 8) minimizes $\|W_{out} W_a - W_{in}\|_F^2$.
-For cross-model transfer, we solve for a transformation matrix $W_{cross}$ that maps Model A's hidden states to Model B's input embeddings:
+For cross-model transfer, we solve for a transformation matrix that maps Model A's hidden states to Model B's input embeddings:
 
 $$W_{cross} = (W_{out,A}^T W_{out,A} + \lambda I)^{-1} W_{out,A}^T W_{in,B}$$
 
