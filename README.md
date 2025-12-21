@@ -7,7 +7,21 @@
 This fork extends the framework to support **Hybrid Multi-Agent Systems**, where agents can use **different model checkpoints** (from the same family) while still communicating via latent representations.
 
 ### Motivation
-The original homogeneous setting resembles recursive Chain-of-Thought (CoT). The true potential of MAS lies in **specialization**: leveraging large, capable models for high-level planning and smaller, faster models for execution. This hybrid approach enables efficient collaboration without forcing a single model size for all tasks.
+The original LatentMAS uses a single model backbone for all agents. While this demonstrates the efficiency of latent communication, it functionally resembles recursive Chain-of-Thought reasoning rather than true multi-agent collaboration. All agents share the same capabilities and limitations, which means the system cannot leverage the core advantage of multi-agent systems: **specialization**.
+
+In a truly heterogeneous MAS, different agents can have different strengths. For example, a large, capable model (e.g., 7B parameters) might excel at high-level planning and reasoning, while a smaller, faster model (e.g., 1.5B parameters) could efficiently handle code generation or execution tasks. This division of labor could allow the system to be both performant and efficient, without forcing a single model size that either wastes compute on simple tasks or underperforms on complex ones.
+
+This fork enables such heterogeneous collaboration by allowing agents to use different model (caveat: using the same tokenizer) while still communicating through latent representations.
+
+### Limitations
+**Performance vs. Efficiency Tradeoff:** The current implementation introduces overhead through cross-model alignment and re-encoding of context at each model switch. While the goal is to leverage specialized models for better task performance, the computational cost of model switching may offset gains from using smaller models. 
+
+Key questions remain:
+- Does the performance improvement from specialization justify the alignment overhead?
+- Can the alignment process be optimized (e.g., cached alignments, learned lightweight adapters)?
+- What is the optimal agent-to-model assignment strategy for different task types?
+
+These questions require extensive benchmarking across diverse tasks and model combinations, which is compute-intensive and remains future work.
 
 ### Method: Cross-Model Alignment
 To enable latent communication between different models without training adapters, we extend the linear alignment mechanism. We align Model A's output to Model B's input space via their shared vocabulary.
