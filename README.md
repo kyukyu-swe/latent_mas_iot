@@ -33,51 +33,6 @@ python run.py \
 
 ---
 
-## 💡 Introduction
-
-
-**LatentMAS** is a multi-agent reasoning framework that **moves agent collaboration from token space into the model’s latent space**.  
-Instead of producing long textual reasoning traces, agents communicate by **passing latent thoughts** through their own **working memory**. LatentMAS has the following key features:
-
-- **Efficient** multi-step reasoning with drastically fewer tokens  
-- **Training-free** latent-space alignment for stable generation  
-- **A general technique** compatible with **any HF model** and optionally **vLLM** backends.
-
-Overall, LatentMAS achieves **superior performance**, **lower token usage**, and **major wall-clock speedups** of multi-agent system.
-
-<p align="center">
-  <img src="assets/main.png" width="1000">
-</p>
-
-
-## 🔔 News
-
-- **[2025-11-25]** We have released our paper and code implementations for LatentMAS! Stay tuned for more model-backbone supports and advanced features!
-- **[2025-11-25]** We are featured as 🤗 [**HuggingFace 1st Paper of the Day**](https://huggingface.co/papers/2511.20639)!
-
-## 📊 Experiments Overview
-
-
-### ⭐ Main Results  
-Three main tables from our paper spanning 9 tasks across math & science reasoning, commensonse reasoning, and code generation:
-
-- **Table 1 — LatentMAS under the Sequantial MAS setting**  
-  <p align="center"><img src="assets/main_table1.png" width="1000"></p>
-
-- **Table 2 — LatentMAS under the Hierarchical MAS setting**  
-  <p align="center"><img src="assets/main_table2.png" width="1000"></p>
-
-- **Table 3 — Main Results on Reasoning Intensive Tasks**
-  <p align="center"><img src="assets/main_table3.png" width="1000"></p>
-
-
-### ⚡ Superior Efficiency on **Time and Tokens**
-
-Overall, LatentMAS reduces:
-- **~50–80% tokens**
-- **~3×–7× wall-clock time**
-compared to standard Text-MAS or chain-of-thought baselines.
-
 
 ## 🛠️ Getting Started
 
