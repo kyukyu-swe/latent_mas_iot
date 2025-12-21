@@ -98,7 +98,8 @@ LatentMAS/
 │── methods/
 │   ├── baseline.py        # Single-agent baseline
 │   ├── text_mas.py        # Token-space multi-agent method
-│   └── latent_mas.py      # Latent-space multi-agent (our method)
+│   └── latent_mas.py      # Latent-space multi-agent 
+│   └── latent_mas_hybrid.py # Latent-space multi-heterogeneous-agent 
 │── prompts.py             # Prompt constructors
 │── data.py                # Dataset loaders
 │── data/                  # Provided data + figures (We give medqa.json as an example here)
