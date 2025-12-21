@@ -82,30 +82,10 @@ Transfer 7B→1.5B              Agent 3: Judger
 
 ## Critical Detail: Pre-Realignment Transfer
 
-### WRONG Approach (Don't Do This!)
-
 ```
 Agent A (Model A)
 ├─ Process input
-├─ Hidden states [batch, seq, dim_A]
-├─ Apply realignment_A        ◀─── PROBLEM: Bakes in A's interpretation
-└─ Realigned embeddings [batch, seq, dim_A]
-    │
-    ├─ Transfer to Model B
-    │   (embeddings contain Model A's "opinion")
-    │
-    ▼
-Agent B (Model B)
-└─ Receives embeddings with A's realignment    ◀─── WRONG!
-    (B inherits A's interpretation)
-```
-
-### CORRECT Approach (What We Implemented)
-
-```
-Agent A (Model A)
-├─ Process input
-├─ Hidden states [batch, seq, dim_A]     ◀─── STOP HERE! Extract these
+├─ Hidden states [batch, seq, dim_A]     ◀─── Extract these
 └─ (Skip realignment for transfer)
     │
     ├─ Transfer RAW hidden states
