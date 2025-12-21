@@ -7,7 +7,7 @@
 This fork extends the framework to support **Hybrid Multi-Agent Systems**, where agents can use **different model checkpoints** (from the same family) while still communicating via latent representations.
 
 ### Motivation
-The original homogeneous setting resembles recursive Chain-of-Thought (CoT). The true potential of MAS lies in **specialization**—leveraging large, capable models for high-level planning and smaller, faster models for execution. This hybrid approach enables efficient collaboration without forcing a single model size for all tasks.
+The original homogeneous setting resembles recursive Chain-of-Thought (CoT). The true potential of MAS lies in **specialization**: leveraging large, capable models for high-level planning and smaller, faster models for execution. This hybrid approach enables efficient collaboration without forcing a single model size for all tasks.
 
 ### Method: Cross-Model Alignment
 To enable latent communication between different models without training adapters, we extend the linear alignment mechanism. We align Model A's output to Model B's input space via their shared vocabulary.
