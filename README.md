@@ -26,6 +26,42 @@ Latent Collaboration in Multi-Agent Systems
   <img src="assets/main_res.png" width="1000">
 </p>
 
+# ⚡️ LatentMAS-Hybrid (Fork)
+
+> **Note:** This is a fork of the original [LatentMAS](https://github.com/Gen-Verse/LatentMAS) repository.
+
+## 🌟 Contribution: Heterogeneous Latent Communication
+
+This fork extends the framework to support **Hybrid Multi-Agent Systems**, where agents can use **different model checkpoints** (from the same family) while still communicating via latent representations.
+
+### Motivation
+The original homogeneous setting resembles recursive Chain-of-Thought (CoT). The true potential of MAS lies in **specialization**—leveraging large, capable models for high-level planning and smaller, faster models for execution. This hybrid approach enables efficient collaboration without forcing a single model size for all tasks.
+
+### Method: Cross-Model Alignment
+To enable latent communication between different models without training adapters, we extend the linear alignment mechanism. We align Model A's output to Model B's input space via their shared vocabulary.
+
+**The Math:**
+The original alignment (Eq. 8) minimizes $\|W_{out} W_a - W_{in}\|_F^2$.
+For cross-model transfer, we solve for a transformation matrix $W_{cross}$ that maps Model A's hidden states to Model B's input embeddings:
+
+$$W_{cross} = (W_{out,A}^T W_{out,A} + \lambda I)^{-1} W_{out,A}^T W_{in,B}$$
+
+This effectively maps the latent state $h_A$ to the embedding in Model B that corresponds to the same semantic concept.
+
+### Usage
+Use the `latent_mas_hybrid` method and specify `--agent_models`:
+
+```bash
+python run.py \
+  --method latent_mas_hybrid \
+  --model_name Qwen/Qwen2.5-7B-Instruct \
+  --agent_models Qwen/Qwen2.5-7B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct \
+  --task gsm8k \
+  --prompt sequential
+```
+
+---
+
 ## 💡 Introduction
 
 

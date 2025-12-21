@@ -3,7 +3,7 @@ def build_agent_message_sequential_latent_mas(role: str, question: str, context:
 
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
-    assert method in ["latent_mas"], "this prompt only for latent_mas method"
+    assert method in ["latent_mas", "latent_mas_hybrid"], "this prompt only for latent_mas or latent_mas_hybrid method"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
 
     if role == "planner":
@@ -119,7 +119,7 @@ def build_agent_message_hierarchical_latent_mas(role: str, question: str, contex
 
     system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
-    assert method in ["latent_mas"], "this prompt only for latent_mas method"
+    assert method in ["latent_mas", "latent_mas_hybrid"], "this prompt only for latent_mas or latent_mas_hybrid method"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
 
     if args.task in ['gsm8k', 'aime2024', 'aime2025']:

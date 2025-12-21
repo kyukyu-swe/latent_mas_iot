@@ -17,6 +17,7 @@ from data import (
 )
 from methods.baseline import BaselineMethod
 from methods.latent_mas import LatentMASMethod
+from methods.latent_mas_hybrid import LatentMASMethod as LatentMASHybridMethod
 from methods.text_mas import TextMASMethod
 from models import ModelWrapper
 from utils import auto_device, set_seed
@@ -85,11 +86,10 @@ def main():
     parser = argparse.ArgumentParser()
 
     # core args for experiments
-    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas"], required=True,
-                        help="Which multi-agent method to run: 'baseline', 'text_mas', or 'latent_mas'.")
+    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas", "latent_mas_hybrid"], required=True,
+                        help="Which multi-agent method to run: 'baseline', 'text_mas', 'latent_mas', or 'latent_mas_hybrid'.")
     parser.add_argument("--model_name", type=str, required=True,
-                        choices=["Qwen/Qwen3-4B", "Qwen/Qwen3-4B", "Qwen/Qwen3-14B"],
-                        help="Model choices to use for experiments (e.g. 'Qwen/Qwen3-14B').")
+                        help="Model name to use (e.g. 'Qwen/Qwen3-8B', 'Qwen/Qwen2.5-1.5B-Instruct', etc.)")
     parser.add_argument("--max_samples", type=int, default=-1, help="Number of questions to evaluate; set -1 to use all samples.")
     parser.add_argument("--task", choices=["gsm8k", "aime2024", "aime2025", "gpqa", "arc_easy", "arc_challenge", "mbppplus", 'humanevalplus', 'medqa'], default="gsm8k",
                         help="Dataset/task to evaluate. Controls which loader is used.")
@@ -112,11 +112,19 @@ def main():
     parser.add_argument("--use_vllm", action="store_true", help="Use vLLM backend for generation")
     parser.add_argument("--enable_prefix_caching", action="store_true", help="Enable prefix caching in vLLM for latent_mas")
     parser.add_argument("--use_second_HF_model", action="store_true", help="Use a second HF model for latent generation in latent_mas")
-    parser.add_argument("--device2", type=str, default="cuda:1")
+    parser.add_argument("--device2", type=str, default=None, help="Second device for HF model (defaults to same as --device)")
     parser.add_argument("--tensor_parallel_size", type=int, default=1, help="How many GPUs vLLM should shard the model across")
     parser.add_argument("--gpu_memory_utilization", type=float, default=0.9, help="Target GPU memory utilization for vLLM")
+    
+    # Hybrid method arguments
+    parser.add_argument("--agent_models", type=str, nargs="+", default=None,
+                        help="List of models for each agent in hybrid mode (e.g., 'Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen3-8B Qwen/Qwen2.5-0.5B-Instruct')")
 
     args = parser.parse_args()
+    
+    # Default device2 to device if not specified
+    if args.device2 is None:
+        args.device2 = args.device
     
     if args.method == "latent_mas" and args.use_vllm:
         args.use_second_HF_model = True 
@@ -158,6 +166,16 @@ def main():
             judger_max_new_tokens=args.max_new_tokens,
             **common_kwargs,
             generate_bs=args.generate_bs, 
+            args=args,
+        )
+    elif args.method == 'latent_mas_hybrid':
+        method = LatentMASHybridMethod(
+            model,
+            agent_models=args.agent_models,  # Can be None (same model) or list of models
+            latent_steps=args.latent_steps,
+            judger_max_new_tokens=args.max_new_tokens,
+            **common_kwargs,
+            generate_bs=args.generate_bs,
             args=args,
         )
 
