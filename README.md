@@ -1,31 +1,3 @@
-<a name="readme-top"></a>
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.png">
-    <img alt="LatentMAS" src="assets/logo.png" width=500>
-  </picture>
-</p>
-
-<h3 align="center">
-Latent Collaboration in Multi-Agent Systems
-</h3>
-
-
-
-<p align="center">
-    <a href="https://arxiv.org/abs/2511.20639"><img src="https://img.shields.io/badge/arXiv-2511.20639-B31B1B.svg?logo=arxiv" alt="Arxiv"></a>
-    <a href="https://huggingface.co/papers/2511.20639"><img src="https://img.shields.io/badge/Huggingface-DailyPaper-FFD21E.svg?logo=huggingface" alt="Huggingface Paper"></a>
-    <a href="https://x.com/LingYang_PU/status/1993510834245714001"><img src="https://img.shields.io/badge/Coverage-LatentMAS-2176BC.svg?logo=x" alt="X"></a>
-  
-  </p>
-
----
-
-<p align="center">
-  <img src="assets/main_res.png" width="1000">
-</p>
-
 # ⚡️ LatentMAS-Hybrid (Fork)
 
 > **Note:** This is a fork of the original [LatentMAS](https://github.com/Gen-Verse/LatentMAS) repository.
