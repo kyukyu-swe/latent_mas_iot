@@ -22,6 +22,7 @@ def auto_device(device: Optional[str] = None) -> torch.device:
         return torch.device("cuda")
     return torch.device("cpu")
 
+
 # this is to extract answer in \boxed{}
 def extract_gsm8k_answer(text: str) -> Optional[str]:
     boxes = re.findall(r"\\boxed\{([^}]*)\}", text)
@@ -58,16 +59,19 @@ def extract_markdown_python_block(text: str) -> Optional[str]:
 # to run python
 import traceback
 from multiprocessing import Process, Manager
+
+
 def run_with_timeout(code, timeout):
     def worker(ns, code):
         try:
             local_ns = {}
             exec(code, local_ns)
-            ns['ok'] = True
-            ns['error'] = None
+            ns["ok"] = True
+            ns["error"] = None
         except Exception:
-            ns['ok'] = False
-            ns['error'] = traceback.format_exc()
+            ns["ok"] = False
+            ns["error"] = traceback.format_exc()
+
     with Manager() as manager:
         ns = manager.dict()
         p = Process(target=worker, args=(ns, code))
@@ -75,7 +79,6 @@ def run_with_timeout(code, timeout):
         p.join(timeout)
         if p.is_alive():
             p.terminate()
-            ns['ok'] = False
-            ns['error'] = f"TimeoutError: Execution exceeded {timeout} seconds"
-        return ns.get('ok', False), ns.get('error', None)
-
+            ns["ok"] = False
+            ns["error"] = f"TimeoutError: Execution exceeded {timeout} seconds"
+        return ns.get("ok", False), ns.get("error", None)

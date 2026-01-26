@@ -39,8 +39,10 @@ Use the `latent_mas_hybrid` method and specify `--agent_models`:
 ```bash
 python run.py \
   --method latent_mas_hybrid \
-  --model_name Qwen/Qwen2.5-7B-Instruct \
-  --agent_models Qwen/Qwen2.5-7B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct \
+  --max_samples 2 \
+  --model_name Qwen/Qwen2.5-1.5B-Instruct \
+  --agent_models Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-0.5B-Instruct unsloth/Llama-3.2-1B-Instruct \
+  --quant_bits 8 \
   --task gsm8k \
   --prompt sequential
 ```

@@ -1,0 +1,3 @@
+2026-01-26T15:50:53.910364 >>> [THESIS PROBE] Latent Entry (hybrid) | Raw: 0.0034 MB | Transmitted (4-bit): 0.0009 MB | Shape: [2, 896]
+2026-01-26T15:51:04.109271 >>> [THESIS PROBE] Latent Entry (hybrid) | Raw: 0.0059 MB | Transmitted (4-bit): 0.0015 MB | Shape: [2, 1536]
+2026-01-26T15:51:21.422213 >>> [THESIS PROBE] Latent Entry (hybrid) | Raw: 0.0034 MB | Transmitted (4-bit): 0.0009 MB | Shape: [2, 896]

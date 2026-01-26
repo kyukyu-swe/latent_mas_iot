@@ -13,7 +13,7 @@ from data import (
     load_gpqa_diamond,
     load_mbppplus,
     load_humanevalplus,
-    load_medqa
+    load_medqa,
 )
 from methods.baseline import BaselineMethod
 from methods.latent_mas import LatentMASMethod
@@ -30,6 +30,7 @@ def evaluate(preds: List[Dict]) -> Tuple[float, int]:
     acc = correct / total if total > 0 else 0.0
     return acc, correct
 
+
 # Main processing function for each batch
 def process_batch(
     method,
@@ -44,8 +45,8 @@ def process_batch(
     if remaining <= 0:
         return processed, preds
     current_batch = batch[:remaining]
-    if args.method == "latent_mas" and args.use_vllm: 
-        results = method.run_batch_vllm(current_batch) 
+    if args.method == "latent_mas" and args.use_vllm:
+        results = method.run_batch_vllm(current_batch)
     else:
         results = method.run_batch(current_batch)
     if len(results) > remaining:
@@ -74,7 +75,9 @@ def process_batch(
             print("[Output]")
             print(agent_output)
             print("----------------------------------------------")
-        print(f"Result: Pred={res.get('prediction')} | Gold={res.get('gold')} | OK={res.get('correct')}")
+        print(
+            f"Result: Pred={res.get('prediction')} | Gold={res.get('gold')} | OK={res.get('correct')}"
+        )
 
     processed += len(results)
     if progress is not None:
@@ -86,54 +89,141 @@ def main():
     parser = argparse.ArgumentParser()
 
     # core args for experiments
-    parser.add_argument("--method", choices=["baseline", "text_mas", "latent_mas", "latent_mas_hybrid"], required=True,
-                        help="Which multi-agent method to run: 'baseline', 'text_mas', 'latent_mas', or 'latent_mas_hybrid'.")
-    parser.add_argument("--model_name", type=str, required=True,
-                        help="Model name to use (e.g. 'Qwen/Qwen3-8B', 'Qwen/Qwen2.5-1.5B-Instruct', etc.)")
-    parser.add_argument("--max_samples", type=int, default=-1, help="Number of questions to evaluate; set -1 to use all samples.")
-    parser.add_argument("--task", choices=["gsm8k", "aime2024", "aime2025", "gpqa", "arc_easy", "arc_challenge", "mbppplus", 'humanevalplus', 'medqa'], default="gsm8k",
-                        help="Dataset/task to evaluate. Controls which loader is used.")
-    parser.add_argument("--prompt", type=str, choices=["sequential", "hierarchical"], default="sequential", help="Multi-agent system architecture: 'sequential' or 'hierarchical'.")
+    parser.add_argument(
+        "--method",
+        choices=["baseline", "text_mas", "latent_mas", "latent_mas_hybrid"],
+        required=True,
+        help="Which multi-agent method to run: 'baseline', 'text_mas', 'latent_mas', or 'latent_mas_hybrid'.",
+    )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        required=True,
+        help="Model name to use (e.g. 'Qwen/Qwen3-8B', 'Qwen/Qwen2.5-1.5B-Instruct', etc.)",
+    )
+    parser.add_argument(
+        "--max_samples",
+        type=int,
+        default=-1,
+        help="Number of questions to evaluate; set -1 to use all samples.",
+    )
+    parser.add_argument(
+        "--task",
+        choices=[
+            "gsm8k",
+            "aime2024",
+            "aime2025",
+            "gpqa",
+            "arc_easy",
+            "arc_challenge",
+            "mbppplus",
+            "humanevalplus",
+            "medqa",
+        ],
+        default="gsm8k",
+        help="Dataset/task to evaluate. Controls which loader is used.",
+    )
+    parser.add_argument(
+        "--prompt",
+        type=str,
+        choices=["sequential", "hierarchical"],
+        default="sequential",
+        help="Multi-agent system architecture: 'sequential' or 'hierarchical'.",
+    )
 
     # other args
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--split", type=str, default="test")
     parser.add_argument("--max_new_tokens", type=int, default=4096)
-    parser.add_argument("--latent_steps", type=int, default=0, help="Number of latent steps for LatentMAS method")
+    parser.add_argument(
+        "--latent_steps",
+        type=int,
+        default=0,
+        help="Number of latent steps for LatentMAS method",
+    )
     parser.add_argument("--temperature", type=float, default=0.6)
     parser.add_argument("--top_p", type=float, default=0.95)
-    parser.add_argument("--generate_bs", type=int, default=20, help="Batch size for generation")
-    parser.add_argument("--text_mas_context_length", type=int, default=-1, help="TextMAS context length limit")
-    parser.add_argument("--think", action="store_true", help="Manually add think token in the prompt for LatentMAS")
+    parser.add_argument(
+        "--generate_bs", type=int, default=20, help="Batch size for generation"
+    )
+    parser.add_argument(
+        "--text_mas_context_length",
+        type=int,
+        default=-1,
+        help="TextMAS context length limit",
+    )
+    parser.add_argument(
+        "--think",
+        action="store_true",
+        help="Manually add think token in the prompt for LatentMAS",
+    )
     parser.add_argument("--latent_space_realign", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
 
     # vLLM support
-    parser.add_argument("--use_vllm", action="store_true", help="Use vLLM backend for generation")
-    parser.add_argument("--enable_prefix_caching", action="store_true", help="Enable prefix caching in vLLM for latent_mas")
-    parser.add_argument("--use_second_HF_model", action="store_true", help="Use a second HF model for latent generation in latent_mas")
-    parser.add_argument("--device2", type=str, default=None, help="Second device for HF model (defaults to same as --device)")
-    parser.add_argument("--tensor_parallel_size", type=int, default=1, help="How many GPUs vLLM should shard the model across")
-    parser.add_argument("--gpu_memory_utilization", type=float, default=0.9, help="Target GPU memory utilization for vLLM")
-    
+    parser.add_argument(
+        "--use_vllm", action="store_true", help="Use vLLM backend for generation"
+    )
+    parser.add_argument(
+        "--enable_prefix_caching",
+        action="store_true",
+        help="Enable prefix caching in vLLM for latent_mas",
+    )
+    parser.add_argument(
+        "--use_second_HF_model",
+        action="store_true",
+        help="Use a second HF model for latent generation in latent_mas",
+    )
+    parser.add_argument(
+        "--device2",
+        type=str,
+        default=None,
+        help="Second device for HF model (defaults to same as --device)",
+    )
+    parser.add_argument(
+        "--tensor_parallel_size",
+        type=int,
+        default=1,
+        help="How many GPUs vLLM should shard the model across",
+    )
+    parser.add_argument(
+        "--gpu_memory_utilization",
+        type=float,
+        default=0.9,
+        help="Target GPU memory utilization for vLLM",
+    )
+
     # Hybrid method arguments
-    parser.add_argument("--agent_models", type=str, nargs="+", default=None,
-                        help="List of models for each agent in hybrid mode (e.g., 'Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen3-8B Qwen/Qwen2.5-0.5B-Instruct')")
+    parser.add_argument(
+        "--agent_models",
+        type=str,
+        nargs="+",
+        default=None,
+        help="List of models for each agent in hybrid mode (e.g., 'Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen3-8B Qwen/Qwen2.5-0.5B-Instruct')",
+    )
+
+    # quantization arguments
+    parser.add_argument(
+        "--quant_bits",
+        type=int,
+        default=16,
+        help="Compression level for latent thoughts. Use 4, 8, or 16.",
+    )
 
     args = parser.parse_args()
-    
+
     # Default device2 to device if not specified
     if args.device2 is None:
         args.device2 = args.device
-    
+
     if args.method == "latent_mas" and args.use_vllm:
-        args.use_second_HF_model = True 
+        args.use_second_HF_model = True
         args.enable_prefix_caching = True
-    
+
     set_seed(args.seed)
     device = auto_device(args.device)
     model = ModelWrapper(args.model_name, device, use_vllm=args.use_vllm, args=args)
-    
+
     start_time = time.time()
 
     common_kwargs = dict(
@@ -141,7 +231,7 @@ def main():
         top_p=args.top_p,
     )
 
-    # method selection 
+    # method selection
     if args.method == "baseline":
         method = BaselineMethod(
             model,
@@ -149,7 +239,7 @@ def main():
             **common_kwargs,
             generate_bs=args.generate_bs,
             use_vllm=args.use_vllm,
-            args=args
+            args=args,
         )
     elif args.method == "text_mas":
         method = TextMASMethod(
@@ -159,16 +249,16 @@ def main():
             generate_bs=args.generate_bs,
             args=args,
         )
-    elif args.method == 'latent_mas':
+    elif args.method == "latent_mas":
         method = LatentMASMethod(
             model,
             latent_steps=args.latent_steps,
             judger_max_new_tokens=args.max_new_tokens,
             **common_kwargs,
-            generate_bs=args.generate_bs, 
+            generate_bs=args.generate_bs,
             args=args,
         )
-    elif args.method == 'latent_mas_hybrid':
+    elif args.method == "latent_mas_hybrid":
         method = LatentMASHybridMethod(
             model,
             agent_models=args.agent_models,  # Can be None (same model) or list of models
@@ -182,31 +272,31 @@ def main():
     preds: List[Dict] = []
     processed = 0
     batch: List[Dict] = []
-    
+
     # dataset loading
     if args.task == "gsm8k":
         dataset_iter = load_gsm8k(split=args.split)
     elif args.task == "aime2024":
         dataset_iter = load_aime2024(split="train")
     elif args.task == "aime2025":
-        dataset_iter = load_aime2025(split='train')
+        dataset_iter = load_aime2025(split="train")
     elif args.task == "gpqa":
-        dataset_iter = load_gpqa_diamond(split='test')
+        dataset_iter = load_gpqa_diamond(split="test")
     elif args.task == "arc_easy":
-        dataset_iter = load_arc_easy(split='test')
+        dataset_iter = load_arc_easy(split="test")
     elif args.task == "arc_challenge":
-        dataset_iter = load_arc_challenge(split='test')
+        dataset_iter = load_arc_challenge(split="test")
     elif args.task == "mbppplus":
-        dataset_iter = load_mbppplus(split='test')
+        dataset_iter = load_mbppplus(split="test")
     elif args.task == "humanevalplus":
-        dataset_iter = load_humanevalplus(split='test')
+        dataset_iter = load_humanevalplus(split="test")
     elif args.task == "medqa":
-        dataset_iter = load_medqa(split='test')
+        dataset_iter = load_medqa(split="test")
     else:
-        raise ValueError(f'no {args.task} support')
+        raise ValueError(f"no {args.task} support")
 
     if args.max_samples == -1:
-        dataset_iter = list(dataset_iter)  
+        dataset_iter = list(dataset_iter)
         args.max_samples = len(dataset_iter)
 
     progress = tqdm(total=args.max_samples)
@@ -240,11 +330,11 @@ def main():
             args=args,
         )
     progress.close()
-    
+
     total_time = time.time() - start_time
 
     acc, correct = evaluate(preds)
-    
+
     # Load results in JSON format
     print(
         json.dumps(
@@ -256,13 +346,12 @@ def main():
                 "max_samples": args.max_samples,
                 "accuracy": acc,
                 "correct": correct,
-                "total_time_sec": round(total_time,4),
+                "total_time_sec": round(total_time, 4),
                 "time_per_sample_sec": round(total_time / args.max_samples, 4),
             },
             ensure_ascii=False,
         )
     )
-
 
 
 if __name__ == "__main__":
