@@ -144,11 +144,20 @@ def _ensure_pad_token(tokenizer: AutoTokenizer) -> None:
             tokenizer.add_special_tokens({"pad_token": "<pad>"})
 
 
-def _past_length(past_key_values: Optional[Tuple]) -> int:
-    if not past_key_values:
+def _past_length(past_key_values) -> int:
+    """Get the sequence length from past_key_values, handling both tuple and DynamicCache formats."""
+    if past_key_values is None:
         return 0
-    k = past_key_values[0][0]
-    return k.shape[-2]
+    # Handle DynamicCache (transformers >= 4.36)
+    if hasattr(past_key_values, "get_seq_length"):
+        return past_key_values.get_seq_length()
+    # Handle legacy tuple format
+    if isinstance(past_key_values, (tuple, list)) and len(past_key_values) > 0:
+        first_layer = past_key_values[0]
+        if isinstance(first_layer, (tuple, list)) and len(first_layer) > 0:
+            k = first_layer[0]
+            return k.shape[-2]
+    return 0
 
 
 # --- [MAIN MODEL WRAPPER] ---
