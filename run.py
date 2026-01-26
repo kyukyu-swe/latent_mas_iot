@@ -19,9 +19,14 @@ from methods.baseline import BaselineMethod
 from methods.latent_mas import LatentMASMethod
 from methods.latent_mas_hybrid import LatentMASMethod as LatentMASHybridMethod
 from methods.text_mas import TextMASMethod
-from models import ModelWrapper
+from models import (
+    ModelWrapper,
+    set_quantization_stats_collector,
+    get_and_reset_quantization_stats,
+)
 from utils import auto_device, set_seed
 import time
+import os
 
 
 def evaluate(preds: List[Dict]) -> Tuple[float, int]:
@@ -207,7 +212,12 @@ def main():
         "--quant_bits",
         type=int,
         default=16,
-        help="Compression level for latent thoughts. Use 4, 8, or 16.",
+        help="Compression level for latent thoughts. Use 2, 4, 8, or 16.",
+    )
+    parser.add_argument(
+        "--compare_quantizations",
+        action="store_true",
+        help="Run once for 16-, 8-, 4-, and 2-bit and write one comparison table to logs/quantization_comparison.log",
     )
 
     args = parser.parse_args()
@@ -298,6 +308,85 @@ def main():
     if args.max_samples == -1:
         dataset_iter = list(dataset_iter)
         args.max_samples = len(dataset_iter)
+
+    # When comparing quantizations, we need to iterate 3 times over the same data
+    if getattr(args, "compare_quantizations", False):
+        dataset_iter = list(dataset_iter)
+
+    # Optional: run 16-, 8-, 4-bit in one go and write a single comparison table
+    if getattr(args, "compare_quantizations", False) and args.method in (
+        "latent_mas_hybrid",
+        "latent_mas",
+    ):
+        results_rows = []
+        for quant_bits in [16, 8, 4, 2]:
+            args.quant_bits = quant_bits
+            set_quantization_stats_collector(
+                {"total_transmitted_mb": 0.0, "num_steps": 0}
+            )
+            preds_q: List[Dict] = []
+            processed_q = 0
+            batch_q: List[Dict] = []
+            run_start = time.time()
+            progress_q = tqdm(total=args.max_samples, desc=f"quant_bits={quant_bits}")
+            for item in dataset_iter:
+                if processed_q >= args.max_samples:
+                    break
+                batch_q.append(item)
+                if (
+                    len(batch_q) == args.generate_bs
+                    or processed_q + len(batch_q) == args.max_samples
+                ):
+                    processed_q, preds_q = process_batch(
+                        method,
+                        batch_q,
+                        processed_q,
+                        preds_q,
+                        progress_q,
+                        args.max_samples,
+                        args,
+                    )
+                    batch_q = []
+                    if processed_q >= args.max_samples:
+                        break
+            if batch_q and processed_q < args.max_samples:
+                processed_q, preds_q = process_batch(
+                    method,
+                    batch_q,
+                    processed_q,
+                    preds_q,
+                    progress_q,
+                    max_samples=args.max_samples,
+                    args=args,
+                )
+            progress_q.close()
+            total_time_q = time.time() - run_start
+            acc_q, correct_q = evaluate(preds_q)
+            total_mb, num_steps = get_and_reset_quantization_stats()
+            bandwidth_per_step = total_mb / num_steps if num_steps > 0 else 0.0
+            results_rows.append(
+                (quant_bits, bandwidth_per_step, acc_q, total_time_q, correct_q)
+            )
+
+        baseline_bw = results_rows[0][1] if results_rows else 0.0
+        log_dir = os.path.join(os.getcwd(), "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        table_path = os.path.join(log_dir, "quantization_comparison.log")
+        n_samples = args.max_samples
+        with open(table_path, "w", encoding="utf-8") as f:
+            f.write(
+                "Quantization | Bandwidth (MB/Step) | Bandwidth Saving | "
+                f"Accuracy (n={n_samples}) | Total Time (s)\n"
+            )
+            f.write("-" * 80 + "\n")
+            for q, bw, acc, tt, correct in results_rows:
+                saving = (1 - bw / baseline_bw) * 100 if baseline_bw > 0 else 0.0
+                label = "16-bit (Baseline)" if q == 16 else f"{q}-bit"
+                f.write(f"{label} | {bw:.4f} | {saving:.1f}% | {acc:.2f} | {tt:.2f}\n")
+        with open(table_path, "r", encoding="utf-8") as f:
+            print("\n" + f.read())
+        print(f"Table saved to {table_path}")
+        return
 
     progress = tqdm(total=args.max_samples)
 

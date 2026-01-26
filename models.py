@@ -19,6 +19,26 @@ except ImportError:
 # Log file for thesis probe (set THESIS_PROBE_LOG to override path)
 _THESIS_PROBE_LOG_PATH: Optional[str] = None
 
+# Optional stats collector for --compare_quantizations (set by run.py, read after each run)
+_quantization_run_stats: Optional[dict] = None
+
+
+def set_quantization_stats_collector(stats: Optional[dict]) -> None:
+    """Enable or disable collection of bandwidth stats for comparison table."""
+    global _quantization_run_stats
+    _quantization_run_stats = stats
+
+
+def get_and_reset_quantization_stats() -> Tuple[float, int]:
+    """Return (total_transmitted_mb, num_steps) and reset the collector."""
+    global _quantization_run_stats
+    if _quantization_run_stats is None:
+        return 0.0, 0
+    total = _quantization_run_stats.get("total_transmitted_mb", 0.0)
+    steps = _quantization_run_stats.get("num_steps", 0)
+    _quantization_run_stats = None
+    return total, steps
+
 
 def _get_thesis_probe_log_path() -> str:
     global _THESIS_PROBE_LOG_PATH
@@ -39,25 +59,29 @@ def _get_thesis_probe_log_path() -> str:
     return path
 
 
-def probe_latent_overhead(hidden_states: torch.Tensor, step_label: str, quant_bits: int = 16):
+def probe_latent_overhead(
+    hidden_states: torch.Tensor, step_label: str, quant_bits: int = 16
+):
     """
     Measures the bandwidth/size of the latent tensor in Megabytes.
     This provides the 'cost' data for your thesis tables.
     Logs to stdout and appends to a file (logs/thesis_probe.log by default).
-    
+
     Args:
         hidden_states: The latent tensor to measure
         step_label: Label for this probe point
         quant_bits: Quantization bits (4, 8, or 16) - used to calculate simulated transmitted size
     """
     num_elements = hidden_states.nelement()
-    element_size = hidden_states.element_size()  # Native size (usually 2 bytes for bfloat16)
+    element_size = (
+        hidden_states.element_size()
+    )  # Native size (usually 2 bytes for bfloat16)
     raw_size_mb = (num_elements * element_size) / (1024 * 1024)
-    
+
     # Calculate simulated transmitted size based on quantization
     # Native is 16-bit (bfloat16), so scale by quant_bits/16
     transmitted_size_mb = raw_size_mb * (quant_bits / 16.0)
-    
+
     shape_str = str(list(hidden_states.shape))
     msg = (
         f">>> [THESIS PROBE] {step_label} | "
@@ -72,6 +96,14 @@ def probe_latent_overhead(hidden_states: torch.Tensor, step_label: str, quant_bi
             f.write(f"{datetime.now().isoformat()} {msg}\n")
     except OSError:
         pass
+    # Accumulate for --compare_quantizations table
+    if _quantization_run_stats is not None:
+        _quantization_run_stats["total_transmitted_mb"] = (
+            _quantization_run_stats.get("total_transmitted_mb", 0.0) + transmitted_size_mb
+        )
+        _quantization_run_stats["num_steps"] = (
+            _quantization_run_stats.get("num_steps", 0) + 1
+        )
     return raw_size_mb, transmitted_size_mb
 
 
@@ -81,6 +113,7 @@ def latent_sieve_quantize(hidden_states: torch.Tensor, bits: int = 16):
     Bits = 16: No change (Baseline)
     Bits = 8: 50% bandwidth reduction
     Bits = 4: 75% bandwidth reduction
+    Bits = 2: 87.5% bandwidth reduction
     """
     if bits >= 16:
         return hidden_states

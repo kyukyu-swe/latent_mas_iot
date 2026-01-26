@@ -1,7 +1,12 @@
 from typing import Dict, List, Optional, Tuple
 
 from . import default_agents
-from models import ModelWrapper, _past_length, probe_latent_overhead, latent_sieve_quantize
+from models import (
+    ModelWrapper,
+    _past_length,
+    probe_latent_overhead,
+    latent_sieve_quantize,
+)
 from prompts import (
     build_agent_message_sequential_latent_mas,
     build_agent_message_hierarchical_latent_mas,
@@ -229,7 +234,9 @@ class LatentMASMethod:
 
         # [THESIS PROBE] Record latent size after initial forward
         quant_bits = getattr(self.args, "quant_bits", 16)
-        probe_latent_overhead(last_hidden, "Latent Entry (hybrid)", quant_bits=quant_bits)
+        probe_latent_overhead(
+            last_hidden, "Latent Entry (hybrid)", quant_bits=quant_bits
+        )
 
         # Generate latent steps and store RAW hidden states (before alignment)
         raw_latent_hidden_list = []
@@ -243,11 +250,11 @@ class LatentMASMethod:
             latent_vec = agent_model._apply_latent_realignment(
                 last_hidden, agent_model.model
             )
-            
+
             # [THESIS] Apply quantization (simulates bandwidth reduction)
             quant_bits = getattr(self.args, "quant_bits", 16)
             latent_vec = latent_sieve_quantize(latent_vec, bits=quant_bits)
-            
+
             latent_embed = latent_vec.unsqueeze(1)  # [batch, 1, hidden_dim]
 
             past_len = _past_length(past)
@@ -270,7 +277,9 @@ class LatentMASMethod:
             last_hidden = outputs.hidden_states[-1][:, -1, :]  # [batch, hidden_dim]
 
             # [THESIS PROBE] Record latent size at each step
-            probe_latent_overhead(last_hidden, f"Latent Step {step_idx} (hybrid)", quant_bits=quant_bits)
+            probe_latent_overhead(
+                last_hidden, f"Latent Step {step_idx} (hybrid)", quant_bits=quant_bits
+            )
 
         # Concatenate ONLY RAW hidden states: [batch, latent_steps, hidden_dim]
         if latent_steps > 0:
