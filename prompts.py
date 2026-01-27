@@ -1,9 +1,13 @@
+def build_agent_message_sequential_latent_mas(
+    role: str, question: str, context: str = "", method=None, args=None
+):
 
-def build_agent_message_sequential_latent_mas(role: str, question: str, context: str = "", method=None, args=None):
+    system_message = "You are a helpful assistant."
 
-    system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
-
-    assert method in ["latent_mas", "latent_mas_hybrid"], "this prompt only for latent_mas or latent_mas_hybrid method"
+    assert method in [
+        "latent_mas",
+        "latent_mas_hybrid",
+    ], "this prompt only for latent_mas or latent_mas_hybrid method"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
 
     if role == "planner":
@@ -14,7 +18,7 @@ Question: {question}
 Your outlined plan should be concise with a few bulletpoints for each step. Do not produce the final answer.
 Now output your plan to solve the question below:
 """
-    
+
     elif role == "critic":
         user_prompt = f"""
 Question: {question}
@@ -30,7 +34,7 @@ Feedback: [Your detailed feedback to improve the plan here]
 
 Now, output your response below:
 """
-    
+
     elif role == "refiner":
         user_prompt = f"""
 Question: {question}
@@ -44,9 +48,9 @@ Based on the input, write a refined and improved plan to solve the question. Mak
 
 Now, output your refined plan below:
 """
-    
+
     elif role == "judger":
-        if args.task in ['gsm8k', 'aime2024', 'aime2025']:
+        if args.task in ["gsm8k", "aime2024", "aime2025"]:
             user_prompt = f"""
 Target Question: {question}
 
@@ -58,8 +62,8 @@ You must reason step-by-step to solve the provided Target Question without outpu
 
 Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
 """
-        
-        elif args.task in ["arc_easy", "arc_challenge", "gpqa", 'medqa']:
+
+        elif args.task in ["arc_easy", "arc_challenge", "gpqa", "medqa"]:
             user_prompt = f"""
 Target Question: {question}
 
@@ -106,23 +110,32 @@ Your final answer must be selected from 1 and 2. For example \\boxed{{1}} or \\b
 Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
 """
 
-        else: 
-            raise NotImplementedError(f"Task {args.task} not implemented in v5 judger prompt.")
-        
+        else:
+            raise NotImplementedError(
+                f"Task {args.task} not implemented in v5 judger prompt."
+            )
+
     return [
         {"role": "system", "content": system_message},
         {"role": "user", "content": user_prompt},
     ]
 
 
-def build_agent_message_hierarchical_latent_mas(role: str, question: str, context: str = "", method=None, args=None):
+def build_agent_message_hierarchical_latent_mas(
+    role: str, question: str, context: str = "", method=None, args=None
+):
 
-    system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    system_message = (
+        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    )
 
-    assert method in ["latent_mas", "latent_mas_hybrid"], "this prompt only for latent_mas or latent_mas_hybrid method"
+    assert method in [
+        "latent_mas",
+        "latent_mas_hybrid",
+    ], "this prompt only for latent_mas or latent_mas_hybrid method"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
 
-    if args.task in ['gsm8k', 'aime2024', 'aime2025']:
+    if args.task in ["gsm8k", "aime2024", "aime2025"]:
         if role == "planner":
             user_content = f"""
 You are a math agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -131,7 +144,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "critic":
             user_content = f"""
 You are a science agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -140,7 +153,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "refiner":
             user_content = f"""
 You are a code agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -210,7 +223,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
             elif role == "critic":
                 user_content = f"""
 You are a science agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -220,7 +233,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
             elif role == "refiner":
                 user_content = f"""
 You are a code agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -242,7 +255,7 @@ Your response:
 """
 
     elif args.task in ["mbppplus", "humanevalplus"]:
-        
+
         if role == "planner":
             user_content = f"""
 You are a math agent. Given the input question, reason step by step: please provide an efficient and self-contained Python function that solves the following problem in a markdown code block:\n```\nYOUR_PYTHON_CODE\n```.
@@ -302,7 +315,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "critic":
             user_content = f"""
 You are a science agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -312,7 +325,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "refiner":
             user_content = f"""
 You are a code agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -338,9 +351,13 @@ Your response:
     ]
 
 
-def build_agent_messages_sequential_text_mas(role: str, question: str, context: str = "", method=None, args=None):
+def build_agent_messages_sequential_text_mas(
+    role: str, question: str, context: str = "", method=None, args=None
+):
 
-    system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    system_message = (
+        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    )
 
     assert method in ["text_mas"], "only for text_mas method"
     assert "qwen" in args.model_name.lower(), "only for qwen models"
@@ -467,7 +484,7 @@ def add(a, b):
 ```
 Do not add any other contents inside the markdown code block.
 """
-            
+
         elif task in ["winogrande"]:
             user_content = f"""
 Target Question: {question}
@@ -508,14 +525,18 @@ Now, reason step by step and present your final answer clearly at the end.
     ]
 
 
-def build_agent_messages_hierarchical_text_mas(role: str, question: str, context: str = "", method=None, args=None):
+def build_agent_messages_hierarchical_text_mas(
+    role: str, question: str, context: str = "", method=None, args=None
+):
 
-    system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
-    
+    system_message = (
+        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    )
+
     assert method in ["text_mas"], "this prompt only for text_mas method"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
-    
-    if args.task in ['gsm8k', 'aime2024', 'aime2025']:
+
+    if args.task in ["gsm8k", "aime2024", "aime2025"]:
         if role == "planner":
             user_content = f"""
 You are a math agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -524,7 +545,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "critic":
             user_content = f"""
 You are a science agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -533,7 +554,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "refiner":
             user_content = f"""
 You are a code agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -563,7 +584,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "critic":
             user_content = f"""
 You are a science agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -572,7 +593,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "refiner":
             user_content = f"""
 You are a code agent. Given the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -595,7 +616,7 @@ Your response:
 """
 
     elif args.task in ["mbppplus", "humanevalplus"]:
-        
+
         if role == "planner":
             user_content = f"""
 You are a math agent. You must put all python code as self-contained Python function in markdown code blocks. For example ```python
@@ -651,7 +672,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "critic":
             user_content = f"""
 You are a science agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -661,7 +682,7 @@ Input Question: {question}
 
 Your response:
 """
-    
+
         elif role == "refiner":
             user_content = f"""
 You are a code agent. Given the input question, reason step-by-step and put the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
@@ -693,9 +714,13 @@ Your response:
 
 def build_agent_messages_single_agent(question: str, args=None):
 
-    system_message = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    system_message = (
+        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    )
 
-    assert args.method in ["baseline"], "this prompt only for baseline method (single agent)"
+    assert args.method in [
+        "baseline"
+    ], "this prompt only for baseline method (single agent)"
     assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
 
     task = args.task
@@ -763,4 +788,3 @@ Present your reasoning, and then clearly state your final answer at the end.
         {"role": "system", "content": system_message},
         {"role": "user", "content": user_content},
     ]
-

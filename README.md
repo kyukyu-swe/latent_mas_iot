@@ -218,3 +218,11 @@ CUDA_VISIBLE_DEVICES=0,1 python run.py --method latent_mas --model_name Qwen/Qwe
 ## 🤝 Ackowledgement 
 
 This code is partially based on the amazing work of [vLLM](https://github.com/vllm-project/vllm).
+
+
+
+python run.py --method latent_mas_hybrid --compare_quantizations \
+  --max_samples 1000 \
+  --model_name Qwen/Qwen2.5-7B-Instruct \
+  --agent_models Qwen/Qwen2.5-7B-Instruct unsloth/Llama-3.2-1B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-7B-Instruct \
+  --task gsm8k --prompt sequential

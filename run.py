@@ -36,6 +36,67 @@ def evaluate(preds: List[Dict]) -> Tuple[float, int]:
     return acc, correct
 
 
+def write_detailed_log(
+    log_path: str,
+    args: argparse.Namespace,
+    preds: List[Dict],
+    quant_bits: int = None,
+) -> None:
+    """Write detailed log file similar to example_logs format."""
+    with open(log_path, "w", encoding="utf-8") as f:
+        # Write header with configuration
+        f.write(f"  method: {args.method}\n")
+        f.write(f"  model_name: {args.model_name}\n")
+        if hasattr(args, "agent_models") and args.agent_models:
+            f.write(f"  agent_models: {' '.join(args.agent_models)}\n")
+        f.write(f"  device: {args.device}\n")
+        f.write(f"  seed: {args.seed}\n")
+        f.write(f"  max_samples: {args.max_samples}\n")
+        f.write(f"  split: {args.split}\n")
+        f.write(f"  task: {args.task}\n")
+        f.write(f"  max_new_tokens: {args.max_new_tokens}\n")
+        f.write(f"  temperature: {args.temperature}\n")
+        f.write(f"  top_p: {args.top_p}\n")
+        f.write(f"  generate_bs: {args.generate_bs}\n")
+        f.write(f"  think: {getattr(args, 'think', False)}\n")
+        f.write(f"  prompt: {args.prompt}\n")
+        if quant_bits is not None:
+            f.write(f"  quant_bits: {quant_bits}\n")
+        f.write("=" * 40 + "\n")
+
+        # Write question numbers (for compatibility with example format)
+        for idx in range(len(preds)):
+            f.write(f"Question {idx}\n")
+            f.write("error_msg: None\n")
+            f.write("=" * 40 + "\n")
+
+        # Write detailed agent outputs
+        for idx, res in enumerate(preds):
+            f.write(f"\n==================== Problem #{idx + 1} ====================\n")
+            f.write("Question:\n")
+            f.write(res.get("question", "").strip() + "\n")
+            agents = res.get("agents", [])
+            for a in agents:
+                name = a.get("name", "Agent")
+                role = a.get("role", "")
+                agent_header = f"----- Agent: {name} ({role}) -----"
+                f.write(agent_header + "\n")
+                agent_input = a.get("input", "").rstrip()
+                agent_output = a.get("output", "").rstrip()
+                latent_steps = a.get("latent_steps", None)
+                f.write("[To Tokenize]\n")
+                f.write(agent_input + "\n")
+                if latent_steps is not None:
+                    f.write("[Latent Steps]\n")
+                    f.write(str(latent_steps) + "\n")
+                f.write("[Output]\n")
+                f.write(agent_output + "\n")
+                f.write("----------------------------------------------\n")
+            f.write(
+                f"Result: Pred={res.get('prediction')} | Gold={res.get('gold')} | OK={res.get('correct')}\n"
+            )
+
+
 # Main processing function for each batch
 def process_batch(
     method,
@@ -367,6 +428,15 @@ def main():
             results_rows.append(
                 (quant_bits, bandwidth_per_step, acc_q, total_time_q, correct_q)
             )
+
+            # Write detailed log for this quantization level
+            log_dir = os.path.join(os.getcwd(), "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            detailed_log_path = os.path.join(
+                log_dir, f"quantization_{quant_bits}bit_detailed.log"
+            )
+            write_detailed_log(detailed_log_path, args, preds_q, quant_bits=quant_bits)
+            print(f"Detailed log saved to {detailed_log_path}")
 
         baseline_bw = results_rows[0][1] if results_rows else 0.0
         log_dir = os.path.join(os.getcwd(), "logs")
