@@ -7,6 +7,7 @@
 This fork extends the framework to support **Hybrid Multi-Agent Systems**, where agents can use **different model checkpoints** (from the same family) while still communicating via latent representations.
 
 ### Motivation
+
 The original LatentMAS uses a single model backbone for all agents. While this demonstrates the efficiency of latent communication, it functionally resembles recursive Chain-of-Thought reasoning rather than true multi-agent collaboration. All agents share the same capabilities and limitations, which means the system cannot leverage the core advantage of multi-agent systems: **specialization**.
 
 In a truly heterogeneous MAS, different agents can have different strengths. For example, a large, capable model (e.g., 7B parameters) might excel at high-level planning and reasoning, while a smaller, faster model (e.g., 1.5B parameters) could efficiently handle code generation or execution tasks. This division of labor could allow the system to be both performant and efficient, without forcing a single model size that either wastes compute on simple tasks or underperforms on complex ones.
@@ -14,9 +15,11 @@ In a truly heterogeneous MAS, different agents can have different strengths. For
 This fork enables such heterogeneous collaboration by allowing agents to use different model (caveat: using the same tokenizer) while still communicating through latent representations.
 
 ### Limitations
-**Performance vs. Efficiency Tradeoff:** The current implementation introduces overhead through cross-model alignment and re-encoding of context at each model switch. While the goal is to leverage specialized models for better task performance, the computational cost of model switching may offset gains from using smaller models. 
+
+**Performance vs. Efficiency Tradeoff:** The current implementation introduces overhead through cross-model alignment and re-encoding of context at each model switch. While the goal is to leverage specialized models for better task performance, the computational cost of model switching may offset gains from using smaller models.
 
 Key questions remain:
+
 - Does the performance improvement from specialization justify the alignment overhead?
 - Can the alignment process be optimized (e.g., cached alignments, learned lightweight adapters)?
 - What is the optimal agent-to-model assignment strategy for different task types?
@@ -24,6 +27,7 @@ Key questions remain:
 These questions require extensive benchmarking across diverse tasks and model combinations, which is compute-intensive and remains future work.
 
 ### Method: Cross-Model Alignment
+
 To enable latent communication between different models without training adapters, we extend the linear alignment mechanism. We align Model A's output to Model B's input space via their shared vocabulary.
 
 **The Math:**
@@ -34,6 +38,7 @@ $$W_{cross} = (W_{out,A}^T W_{out,A} + \lambda I)^{-1} W_{out,A}^T W_{in,B}$$
 This effectively maps the latent state $h_A$ to the embedding in Model B that corresponds to the same semantic concept.
 
 ### Usage
+
 Use the `latent_mas_hybrid` method and specify `--agent_models`:
 
 ```bash
@@ -49,7 +54,6 @@ python run.py \
 
 ---
 
-
 ## 🛠️ Getting Started
 
 This repository provides all code for reproducing LatentMAS, TextMAS, and baseline single-agent experiments across GSM8K, AIME24/25, GPQA, ARC-Easy/Challenge, MBPP+, HumanEval+, and MedQA.
@@ -62,10 +66,9 @@ We recommend setting your HF cache directory to avoid repeated downloads:
 export HF_HOME=/path/to/huggingface
 export TRANSFORMERS_CACHE=$HF_HOME
 export HF_DATASETS_CACHE=$HF_HOME
-````
+```
 
 Models and datasets will automatically be downloaded into `$HF_HOME`.
-
 
 ### 📦 Install Packages
 
@@ -100,8 +103,8 @@ LatentMAS/
 │── methods/
 │   ├── baseline.py        # Single-agent baseline
 │   ├── text_mas.py        # Token-space multi-agent method
-│   └── latent_mas.py      # Latent-space multi-agent 
-│   └── latent_mas_hybrid.py # Latent-space multi-heterogeneous-agent 
+│   └── latent_mas.py      # Latent-space multi-agent
+│   └── latent_mas_hybrid.py # Latent-space multi-heterogeneous-agent
 │── prompts.py             # Prompt constructors
 │── data.py                # Dataset loaders
 │── data/                  # Provided data + figures (We give medqa.json as an example here)
@@ -109,7 +112,6 @@ LatentMAS/
 │── example_logs/          # Example logs from LatentMAS
 │── requirements.txt
 ```
-
 
 ## 🧪 Running Experiments (standard HF backend)
 
@@ -119,13 +121,11 @@ LatentMAS/
 python run.py --method baseline --model_name Qwen/Qwen3-14B --task gsm8k --max_samples -1 --max_new_tokens 2048
 ```
 
-
 ### 🔹 **TextMAS (text based multi-agent system)**
 
 ```bash
 python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples -1 --max_new_tokens 2048
 ```
-
 
 ### 🔹 **LatentMAS (our latent mas method)**
 
@@ -135,9 +135,9 @@ python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --pro
 
 #### Notes:
 
-* **`--latent_steps`** ∈ [0, 80]
+- **`--latent_steps`** ∈ [0, 80]
   Tune for best performance.
-* **`--latent_space_realign`**
+- **`--latent_space_realign`**
   Enables latent→embedding alignment
   We treat this as a **hyperparameter** — enable/disable depending on task/model:
 
@@ -145,18 +145,15 @@ python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --pro
 python run.py --method latent_mas --model_name Qwen/Qwen3-14B --task gsm8k --prompt sequential --max_samples -1 --latent_space_realign --max_new_tokens 2048
 ```
 
-
 ## 📘 Example Logs
 
 Two example LatentMAS logs are provided for reference purposes:
 
-* `example_logs/qwen3_14b_mbppplus_sequential.txt`
-* `example_logs/qwen3_14b_humanevalplus_hierarchical.txt`
-
+- `example_logs/qwen3_14b_mbppplus_sequential.txt`
+- `example_logs/qwen3_14b_humanevalplus_hierarchical.txt`
 
 Please refer to additional experiment logs [here](https://drive.google.com/drive/folders/1evGv5YAmLb4YM_D9Yu0ABa1nfqHC5N-l?usp=drive_link).
 You can open them to view the full agent interaction traces and outputs.
-
 
 ## ⚡ vLLM Integration
 
@@ -177,10 +174,12 @@ python run.py --method text_mas --model_name Qwen/Qwen3-14B --task gsm8k --promp
 ### 🔹 LatentMAS with vLLM
 
 LatentMAS supports a **hybrid HF + vLLM pipeline** for fast inference:
+
 - vLLM handles **final text generation** (with prefix caching, tensor parallelism, etc.)
 - A HuggingFace model handles **latent-space rollout** and hidden-state alignment
 
 For this setup, we recommend using two GPUs:
+
 - One GPU for vLLM (`--device`, e.g., `cuda:0`)
 - One GPU for the auxiliary HF model (`--device2`, e.g., `cuda:1`)
 
@@ -215,14 +214,12 @@ CUDA_VISIBLE_DEVICES=0,1 python run.py --method latent_mas --model_name Qwen/Qwe
 }
 ```
 
-## 🤝 Ackowledgement 
+## 🤝 Ackowledgement
 
 This code is partially based on the amazing work of [vLLM](https://github.com/vllm-project/vllm).
 
-
-
 python run.py --method latent_mas_hybrid --compare_quantizations \
-  --max_samples 1000 \
-  --model_name Qwen/Qwen2.5-7B-Instruct \
-  --agent_models Qwen/Qwen2.5-7B-Instruct unsloth/Llama-3.2-1B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-7B-Instruct \
-  --task gsm8k --prompt sequential
+ --max_samples 1 \
+ --model_name Qwen/Qwen2.5-1B-Instruct \
+ --agent_models Qwen/Qwen2.5-1B-Instruct unsloth/Llama-3.2-1B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-1B-Instruct \
+ --task gsm8k --prompt sequential
