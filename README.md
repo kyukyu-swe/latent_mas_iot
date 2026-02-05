@@ -220,6 +220,6 @@ This code is partially based on the amazing work of [vLLM](https://github.com/vl
 
 python run.py --method latent_mas_hybrid --compare_quantizations \
  --max_samples 1 \
- --model_name Qwen/Qwen2.5-1B-Instruct \
- --agent_models Qwen/Qwen2.5-1B-Instruct unsloth/Llama-3.2-1B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-1B-Instruct \
+ --model_name Qwen/Qwen2.5-0.5B-Instruct \
+ --agent_models Qwen/Qwen2.5-0.5B-Instruct unsloth/Llama-3.2-1B-Instruct Qwen/Qwen2.5-1.5B-Instruct Qwen/Qwen2.5-0.5B-Instruct \
  --task gsm8k --prompt sequential

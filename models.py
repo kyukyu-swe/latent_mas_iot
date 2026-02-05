@@ -2,6 +2,7 @@ import os
 import csv
 import sys
 import torch
+import torch.nn.functional as F  # Added for Entropy math
 from datetime import datetime
 import matplotlib.pyplot as plt
 from typing import Dict, List, Optional, Tuple
@@ -63,14 +64,14 @@ def probe_latent_overhead(
     hidden_states: torch.Tensor, step_label: str, quant_bits: int = 16
 ):
     """
-    Measures the bandwidth/size of the latent tensor in Megabytes.
-    This provides the 'cost' data for your thesis tables.
+    Measures Bandwidth AND Entropy of the latent tensor.
+    This provides both 'cost' and 'information density' data for thesis tables.
     Logs to stdout and appends to a file (logs/thesis_probe.log by default).
 
     Args:
         hidden_states: The latent tensor to measure
         step_label: Label for this probe point
-        quant_bits: Quantization bits (4, 8, or 16) - used to calculate simulated transmitted size
+        quant_bits: Quantization bits (2, 4, 8, or 16) - used to calculate simulated transmitted size
     """
     num_elements = hidden_states.nelement()
     element_size = (
@@ -82,9 +83,13 @@ def probe_latent_overhead(
     # Native is 16-bit (bfloat16), so scale by quant_bits/16
     transmitted_size_mb = raw_size_mb * (quant_bits / 16.0)
 
+    # Calculate Entropy to prove Information Density changes
+    current_entropy = calculate_latent_entropy(hidden_states)
+
     shape_str = str(list(hidden_states.shape))
     msg = (
         f">>> [THESIS PROBE] {step_label} | "
+        f"Entropy: {current_entropy:.4f} | "
         f"Raw: {raw_size_mb:.4f} MB | "
         f"Transmitted ({quant_bits}-bit): {transmitted_size_mb:.4f} MB | "
         f"Shape: {shape_str}"
@@ -105,6 +110,30 @@ def probe_latent_overhead(
             _quantization_run_stats.get("num_steps", 0) + 1
         )
     return raw_size_mb, transmitted_size_mb
+
+
+# --- [NOVELTY UTILITIES] ---
+
+
+def calculate_latent_entropy(hidden_states: torch.Tensor) -> float:
+    """
+    Calculates the Shannon Entropy of the latent tensor.
+    Novelty Logic: High Entropy = High Information Complexity.
+    
+    Args:
+        hidden_states: The latent tensor to measure
+        
+    Returns:
+        Mean entropy value across all positions
+    """
+    # Convert hidden states to a probability distribution across the hidden dimension
+    # Using float32 for numerical stability in math
+    probs = F.softmax(hidden_states.float(), dim=-1)
+    
+    # Shannon Entropy formula: -sum(p * log(p))
+    entropy = -torch.sum(probs * torch.log(probs + 1e-9), dim=-1)
+    
+    return entropy.mean().item()
 
 
 def latent_sieve_quantize(hidden_states: torch.Tensor, bits: int = 16):
@@ -239,80 +268,6 @@ class ModelWrapper:
         if hasattr(self.model.config, "use_cache"):
             self.model.config.use_cache = True
 
-    @torch.no_grad()
-    def generate_latent_batch(
-        self,
-        input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        *,
-        latent_steps: int,
-        past_key_values: Optional[Tuple] = None,
-    ) -> Tuple:
-        if attention_mask is None:
-            attention_mask = torch.ones_like(input_ids, device=self.device)
-
-        # Initial forward pass
-        outputs = self.model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            past_key_values=past_key_values,
-            use_cache=True,
-            output_hidden_states=True,
-            return_dict=True,
-        )
-        past = outputs.past_key_values
-        last_hidden = outputs.hidden_states[-1][:, -1, :]
-
-        # [THESIS PROBE] Record baseline size
-        probe_latent_overhead(last_hidden, "Latent Entry")
-
-        for step in range(latent_steps):
-            source_model = self.HF_model if hasattr(self, "HF_model") else self.model
-
-            # 1. Apply Latent Realignment
-            latent_vec = self._apply_latent_realignment(last_hidden, source_model)
-
-            # 2. [THESIS SIEVE] Apply Quantization
-            latent_vec = latent_sieve_quantize(latent_vec, bits=self.quant_bits)
-
-            # 3. Roll out the next step
-            latent_embed = latent_vec.unsqueeze(1)
-            past_len = _past_length(past)
-            latent_mask = torch.ones(
-                (latent_embed.shape[0], past_len + 1),
-                dtype=torch.long,
-                device=self.device,
-            )
-
-            outputs = self.model(
-                inputs_embeds=latent_embed,
-                attention_mask=latent_mask,
-                past_key_values=past,
-                use_cache=True,
-                output_hidden_states=True,
-                return_dict=True,
-            )
-            past = outputs.past_key_values
-            last_hidden = outputs.hidden_states[-1][:, -1, :]
-
-        return past
-
-    def _ensure_latent_realign_matrix(self, model, device, args):
-        key = id(model)
-        if key not in self._latent_realign_matrices:
-            matrix, target_norm = self._build_latent_realign_matrix(model, device, args)
-            self._latent_realign_matrices[key] = (matrix, target_norm)
-        return self._latent_realign_matrices[key]
-
-    def _apply_latent_realignment(self, hidden, model):
-        matrix, target_norm = self._ensure_latent_realign_matrix(
-            model, hidden.device, self.args
-        )
-        aligned = torch.matmul(hidden.to(torch.float32), matrix)
-        aligned_norm = aligned.norm(dim=-1, keepdim=True).clamp_min(1e-6)
-        aligned = aligned * (target_norm / aligned_norm)
-        return aligned.to(hidden.dtype)
-
     def _build_latent_realign_matrix(self, model, device, args):
         in_emb = (
             model.get_input_embeddings().weight.detach().to(device, dtype=torch.float32)
@@ -332,8 +287,6 @@ class ModelWrapper:
         if not self.latent_space_realign:
             realign_matrix = torch.eye(realign_matrix.shape[0], device=device)
         return realign_matrix, target_norm
-
-    # ... (Rest of original ModelWrapper helper methods omitted for brevity but preserved in your local copy)
 
     def _ensure_latent_realign_matrix(
         self, model, device, args
@@ -524,8 +477,8 @@ class ModelWrapper:
         last_hidden = outputs.hidden_states[-1][:, -1, :]  # [B, D]
         h_t = last_hidden.detach().clone()
 
-        # [THESIS PROBE] Record baseline size (used by latent_mas_hybrid path)
-        probe_latent_overhead(last_hidden, "Latent Entry")
+        # [THESIS PROBE] Record baseline size and entropy (used by latent_mas_hybrid path)
+        probe_latent_overhead(last_hidden, "Latent Entry", self.quant_bits)
 
         e_t_plus_1 = None
         latent_vecs_all: List[torch.Tensor] = []
@@ -534,13 +487,20 @@ class ModelWrapper:
         for step in range(latent_steps):
 
             source_model = self.HF_model if hasattr(self, "HF_model") else self.model
+            
+            # 1. Apply Latent Realignment
             latent_vec = self._apply_latent_realignment(last_hidden, source_model)
+
+            # 2. [THESIS SIEVE] Apply Quantization
+            # Future Novelty: If entropy > threshold, use self.quant_bits + 2
+            latent_vec = latent_sieve_quantize(latent_vec, bits=self.quant_bits)
 
             latent_vecs_all.append(latent_vec.detach().clone())
 
             if step == 0:
                 e_t_plus_1 = latent_vec.detach().clone()
 
+            # 3. Roll out the next step
             latent_embed = latent_vec.unsqueeze(1)
 
             past_len = _past_length(past)
@@ -559,7 +519,9 @@ class ModelWrapper:
             )
             past = outputs.past_key_values
             last_hidden = outputs.hidden_states[-1][:, -1, :]
-            probe_latent_overhead(last_hidden, f"Latent Step {step}")
+            
+            # [THESIS PROBE] Monitor complexity drift during reasoning
+            probe_latent_overhead(last_hidden, f"Latent Step {step}", self.quant_bits)
 
         return past
 
