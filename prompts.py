@@ -1,14 +1,31 @@
+def _get_system_message(model_name: str) -> str:
+    """Return appropriate system message based on model type."""
+    model_lower = model_name.lower()
+    if "qwen" in model_lower:
+        return "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+    elif "llama" in model_lower:
+        return "You are a helpful, respectful and honest assistant."
+    else:
+        return "You are a helpful assistant."
+
+
+def _is_supported_model(model_name: str) -> bool:
+    """Check if model is supported (Qwen or Llama)."""
+    model_lower = model_name.lower()
+    return "qwen" in model_lower or "llama" in model_lower
+
+
 def build_agent_message_sequential_latent_mas(
     role: str, question: str, context: str = "", method=None, args=None
 ):
 
-    system_message = "You are a helpful assistant."
+    system_message = _get_system_message(args.model_name)
 
     assert method in [
         "latent_mas",
         "latent_mas_hybrid",
     ], "this prompt only for latent_mas or latent_mas_hybrid method"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    assert _is_supported_model(args.model_name), "this prompt only for Qwen or Llama models"
 
     if role == "planner":
         user_prompt = f"""You are a Planner Agent. Given an input question, design a clear, step-by-step plan for how to solve the question.
@@ -125,15 +142,13 @@ def build_agent_message_hierarchical_latent_mas(
     role: str, question: str, context: str = "", method=None, args=None
 ):
 
-    system_message = (
-        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
-    )
+    system_message = _get_system_message(args.model_name)
 
     assert method in [
         "latent_mas",
         "latent_mas_hybrid",
     ], "this prompt only for latent_mas or latent_mas_hybrid method"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    assert _is_supported_model(args.model_name), "this prompt only for Qwen or Llama models"
 
     if args.task in ["gsm8k", "aime2024", "aime2025"]:
         if role == "planner":
@@ -355,12 +370,10 @@ def build_agent_messages_sequential_text_mas(
     role: str, question: str, context: str = "", method=None, args=None
 ):
 
-    system_message = (
-        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
-    )
+    system_message = _get_system_message(args.model_name)
 
     assert method in ["text_mas"], "only for text_mas method"
-    assert "qwen" in args.model_name.lower(), "only for qwen models"
+    assert _is_supported_model(args.model_name), "only for Qwen or Llama models"
 
     # truncate context if needed
     ctx = context[: args.text_mas_context_length]
@@ -529,12 +542,10 @@ def build_agent_messages_hierarchical_text_mas(
     role: str, question: str, context: str = "", method=None, args=None
 ):
 
-    system_message = (
-        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
-    )
+    system_message = _get_system_message(args.model_name)
 
     assert method in ["text_mas"], "this prompt only for text_mas method"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    assert _is_supported_model(args.model_name), "this prompt only for Qwen or Llama models"
 
     if args.task in ["gsm8k", "aime2024", "aime2025"]:
         if role == "planner":
@@ -714,14 +725,12 @@ Your response:
 
 def build_agent_messages_single_agent(question: str, args=None):
 
-    system_message = (
-        "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
-    )
+    system_message = _get_system_message(args.model_name)
 
     assert args.method in [
         "baseline"
     ], "this prompt only for baseline method (single agent)"
-    assert "qwen" in args.model_name.lower(), "this prompt only for qwen models"
+    assert _is_supported_model(args.model_name), "this prompt only for Qwen or Llama models"
 
     task = args.task
 
