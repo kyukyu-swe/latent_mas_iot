@@ -1,0 +1,22 @@
+Entropy Experiment Results - 2026-02-05T05:21:43.284358
+Model: Qwen/Qwen2.5-1.5B-Instruct
+Latent Steps: 5
+======================================================================
+
+DETAILED RESULTS:
+----------------------------------------------------------------------
+Label      |  Avg Entropy |  Max Entropy |  Tokens | Prompt
+----------------------------------------------------------------------
+SIMPLE     |       8.4556 |      14.0965 |      36 | What is 1+1?
+SIMPLE     |      10.1805 |      13.9486 |      31 | Hello.
+SIMPLE     |      11.5614 |      13.9500 |      32 | Say hi.
+COMPLEX    |       8.2786 |      13.9206 |     100 | A train leaves Bangkok at 60 km/h heading east. Another train leaves Chiang Mai ...
+COMPLEX    |       9.5239 |      13.8015 |      94 | Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning an...
+COMPLEX    |       9.6073 |      13.9777 |      99 | A store sells notebooks for $3 each. If you buy more than 5, you get a 20% disco...
+
+======================================================================
+SUMMARY:
+  Average SIMPLE Entropy:  10.0658
+  Average COMPLEX Entropy: 9.1366
+  Difference:              -0.9292
+  Ratio:                   0.91x

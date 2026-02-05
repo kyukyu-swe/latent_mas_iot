@@ -24,7 +24,7 @@ Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning 
 ----- Agent: Planner (planner) -----
 [To Tokenize]
 <|im_start|>system
-You are a helpful assistant.<|im_end|>
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
 <|im_start|>user
 You are a Planner Agent. Given an input question, design a clear, step-by-step plan for how to solve the question.
 
@@ -46,7 +46,7 @@ Now output your plan to solve the question below:
 Cutting Knowledge Date: December 2023
 Today Date: 05 Feb 2026
 
-You are a helpful assistant.<|eot_id|><|start_header_id|>user<|end_header_id|>
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|eot_id|><|start_header_id|>user<|end_header_id|>
 
 Question: Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?
 
@@ -68,7 +68,7 @@ Now, output your response below:<|eot_id|><|start_header_id|>assistant<|end_head
 ----- Agent: Refiner (refiner) -----
 [To Tokenize]
 <|im_start|>system
-You are a helpful assistant.<|im_end|>
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
 <|im_start|>user
 
 Question: Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?
@@ -91,7 +91,7 @@ Now, output your refined plan below:
 ----- Agent: Judger (judger) -----
 [To Tokenize]
 <|im_start|>system
-You are a helpful assistant.<|im_end|>
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
 <|im_start|>user
 
 Target Question: Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?
@@ -106,34 +106,20 @@ Now, reason step by step and output the final answer inside \boxed{YOUR_FINAL_AN
 <|im_end|>
 <|im_start|>assistant
 [Output]
-To solve this problem, let's break down the steps:
+To calculate how much Janet makes at the farmers' market each day, follow these steps:
 
-1. **Determine the total number of eggs laid by the ducks per day**:
-   - Janet's ducks lay 16 eggs per day.
-   
-2. **Calculate the total number of breakfasts and muffins baked each day**:
-   - Janet eats three eggs for breakfast every morning.
-   - She also bakes muffins for her friends every day.
-   - Therefore, she bakes \(3 + 4 = 7\) muffins per day (since she eats 3 for breakfast and 4 for baking muffins).
+1. Calculate the total number of eggs laid by Janet's ducks:
+   - Eggs laid from breakfast: 3
+   - Eggs baked: 4
+   - Total eggs: 3 + 4 = 7
 
-3. **Subtract the breakfasts and muffins from the total eggs to find out how many eggs remain for sale**:
-   - Total eggs laid per day: 16
-   - Breakfasts baked per day: 7
-   - Muffins baked per day: 7
-   
-   Remaining eggs per day: 
-   \[
-   16 - 7 - 7 = 2
-   \]
+2. Subtract the number of eggs used for breakfast from the total eggs:
+   - Eggs sold at the market: 7 - 3 = 4
 
-4. **Calculate the total revenue earned per day from selling the remaining eggs**:
-   - Each fresh egg egg is sold for $2.
+3. Multiply the remaining number of eggs by the price per egg (to find the daily earnings):
+   - Price per egg: $2
+   - Daily earnings: 4 * $2 = $8
 
-   Revenue per day:
-   \[
-   2 \text{ eggs} \times \$2/\text{egg} = \$4
-   \]
-
-Therefore, Janet makes \$4 every day at the farmers' market.
+Therefore, Janet makes $8 every day at the farmers' market.
 ----------------------------------------------
-Result: Pred=4 | Gold=18 | OK=False
+Result: Pred=8 | Gold=18 | OK=False

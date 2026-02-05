@@ -115,25 +115,39 @@ def probe_latent_overhead(
 # --- [NOVELTY UTILITIES] ---
 
 
-def calculate_latent_entropy(hidden_states: torch.Tensor) -> float:
+def calculate_latent_entropy(hidden_states: torch.Tensor, lm_head=None) -> float:
     """
-    Calculates the Shannon Entropy of the latent tensor.
-    Novelty Logic: High Entropy = High Information Complexity.
+    Calculates the Shannon Entropy of the model's prediction distribution.
+    
+    HIGH ENTROPY = HIGH COMPLEXITY (model is uncertain, exploring many options)
+    LOW ENTROPY = LOW COMPLEXITY (model is confident, clear answer)
     
     Args:
-        hidden_states: The latent tensor to measure
+        hidden_states: The latent tensor [batch, hidden_dim] or [batch, seq, hidden_dim]
+        lm_head: Optional LM head to project to vocabulary space.
+                 If None, uses hidden state softmax (less meaningful but still works).
         
     Returns:
-        Mean entropy value across all positions
+        Mean entropy value in bits (log base 2) across all positions
     """
-    # Convert hidden states to a probability distribution across the hidden dimension
-    # Using float32 for numerical stability in math
-    probs = F.softmax(hidden_states.float(), dim=-1)
-    
-    # Shannon Entropy formula: -sum(p * log(p))
-    entropy = -torch.sum(probs * torch.log(probs + 1e-9), dim=-1)
-    
-    return entropy.mean().item()
+    with torch.no_grad():
+        if lm_head is not None:
+            # PROJECT to vocabulary space for TRUE prediction entropy
+            if hidden_states.dim() == 2:
+                hidden_states = hidden_states.unsqueeze(1)
+            
+            logits = lm_head(hidden_states)  # [batch, seq, vocab_size]
+            last_logits = logits[:, -1, :]  # [batch, vocab_size]
+            probs = F.softmax(last_logits.float(), dim=-1)
+        else:
+            # Fallback: use hidden state distribution (less meaningful)
+            probs = F.softmax(hidden_states.float(), dim=-1)
+        
+        # Shannon Entropy in BITS: -sum(p * log2(p))
+        log_probs = torch.log2(probs + 1e-10)
+        entropy = -torch.sum(probs * log_probs, dim=-1)
+        
+        return entropy.mean().item()
 
 
 def latent_sieve_quantize(hidden_states: torch.Tensor, bits: int = 16):
