@@ -6,6 +6,8 @@ from models import (
     _past_length,
     probe_latent_overhead,
     latent_sieve_quantize,
+    latent_sieve_quantize_adaptive,
+    calculate_latent_entropy,
 )
 from prompts import (
     build_agent_message_sequential_latent_mas,
@@ -251,9 +253,30 @@ class LatentMASMethod:
                 last_hidden, agent_model.model
             )
 
-            # [THESIS] Apply quantization (simulates bandwidth reduction)
-            quant_bits = getattr(self.args, "quant_bits", 16)
-            latent_vec = latent_sieve_quantize(latent_vec, bits=quant_bits)
+            # [THESIS] Fixed or EGSQ Adaptive quantization
+            use_adaptive = getattr(self.args, "adaptive_sieve", False)
+            if use_adaptive:
+                entropy = calculate_latent_entropy(latent_vec)
+                latent_vec, bits_used = latent_sieve_quantize_adaptive(
+                    latent_vec,
+                    entropy,
+                    high_threshold=getattr(
+                        self.args, "entropy_high_threshold", 6.5
+                    ),
+                    low_threshold=getattr(
+                        self.args, "entropy_low_threshold", 4.5
+                    ),
+                    bits_min=2,
+                    bits_max=16,
+                )
+                quant_bits = bits_used
+                print(
+                    f">>> [EGSQ hybrid] Step {step_idx}: H={entropy:.3f} -> {bits_used}-bit",
+                    flush=True,
+                )
+            else:
+                quant_bits = getattr(self.args, "quant_bits", 16)
+                latent_vec = latent_sieve_quantize(latent_vec, bits=quant_bits)
 
             latent_embed = latent_vec.unsqueeze(1)  # [batch, 1, hidden_dim]
 

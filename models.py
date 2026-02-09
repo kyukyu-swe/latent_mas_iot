@@ -176,6 +176,76 @@ def latent_sieve_quantize(hidden_states: torch.Tensor, bits: int = 16):
     return dequantized
 
 
+# --- [EGSQ: Entropy-Gated Saliency Quantization] ---
+
+# Allowed bit widths for adaptive sieve (ordered from most to least compression)
+_EGSQ_BIT_OPTIONS = (2, 4, 8, 16)
+
+
+def saliency_score_magnitude(hidden_states: torch.Tensor) -> torch.Tensor:
+    """
+    Saliency by magnitude |x_i| per neuron (Q-Stitch methodology).
+    Returns a scalar summary (e.g. mean magnitude) for logging; full per-neuron
+    scores can be used later for selective quantization.
+    """
+    with torch.no_grad():
+        return hidden_states.abs().mean().item()
+
+
+def egsq_adaptive_bits(
+    entropy: float,
+    high_threshold: float = 6.5,
+    low_threshold: float = 4.5,
+    bits_min: int = 2,
+    bits_max: int = 16,
+) -> int:
+    """
+    EGSQ gate: Bit-Rate = f(H(X)).
+    - H(X) > high_threshold → high complexity → use bits_max (e.g. 16-bit).
+    - H(X) < low_threshold → low complexity → use bits_min (e.g. 2-bit).
+    - Else → interpolate to nearest allowed bit width (2, 4, 8, 16).
+
+    Returns one of _EGSQ_BIT_OPTIONS between bits_min and bits_max.
+    """
+    if entropy >= high_threshold:
+        return bits_max
+    if entropy <= low_threshold:
+        return bits_min
+    # Linear interpolation: t in [0,1] maps to allowed bit widths
+    t = (entropy - low_threshold) / (high_threshold - low_threshold)
+    t = max(0.0, min(1.0, t))
+    allowed = [b for b in _EGSQ_BIT_OPTIONS if bits_min <= b <= bits_max]
+    if not allowed:
+        return bits_min
+    # Map t to index: 0 -> bits_min, 1 -> bits_max
+    idx = t * (len(allowed) - 1)
+    idx = min(int(round(idx)), len(allowed) - 1)
+    return allowed[idx]
+
+
+def latent_sieve_quantize_adaptive(
+    hidden_states: torch.Tensor,
+    entropy: float,
+    high_threshold: float = 6.5,
+    low_threshold: float = 4.5,
+    bits_min: int = 2,
+    bits_max: int = 16,
+) -> Tuple[torch.Tensor, int]:
+    """
+    EGSQ Adaptive Sieve: choose bit-width from entropy, then quantize.
+    Returns (dequantized tensor, bits_used) for logging and bandwidth accounting.
+    """
+    bits = egsq_adaptive_bits(
+        entropy,
+        high_threshold=high_threshold,
+        low_threshold=low_threshold,
+        bits_min=bits_min,
+        bits_max=bits_max,
+    )
+    out = latent_sieve_quantize(hidden_states, bits=bits)
+    return out, bits
+
+
 # --- [ORIGINAL HELPER FUNCTIONS] ---
 
 
@@ -222,6 +292,10 @@ class ModelWrapper:
 
         # Thesis Configuration
         self.quant_bits = int(getattr(args, "quant_bits", 16))
+        # EGSQ Adaptive Sieve (Phase 2)
+        self.use_adaptive_sieve = bool(getattr(args, "adaptive_sieve", False))
+        self.entropy_high_threshold = float(getattr(args, "entropy_high_threshold", 6.5))
+        self.entropy_low_threshold = float(getattr(args, "entropy_low_threshold", 4.5))
 
         if self.use_vllm:
             tp_size = max(1, int(getattr(args, "tensor_parallel_size", 1)))
@@ -505,9 +579,24 @@ class ModelWrapper:
             # 1. Apply Latent Realignment
             latent_vec = self._apply_latent_realignment(last_hidden, source_model)
 
-            # 2. [THESIS SIEVE] Apply Quantization
-            # Future Novelty: If entropy > threshold, use self.quant_bits + 2
-            latent_vec = latent_sieve_quantize(latent_vec, bits=self.quant_bits)
+            # 2. [THESIS SIEVE] Fixed or EGSQ Adaptive Quantization
+            if self.use_adaptive_sieve:
+                entropy = calculate_latent_entropy(latent_vec)
+                latent_vec, bits_used = latent_sieve_quantize_adaptive(
+                    latent_vec,
+                    entropy,
+                    high_threshold=self.entropy_high_threshold,
+                    low_threshold=self.entropy_low_threshold,
+                    bits_min=2,
+                    bits_max=16,
+                )
+                print(
+                    f">>> [EGSQ] Step {step}: H={entropy:.3f} -> {bits_used}-bit",
+                    flush=True,
+                )
+            else:
+                latent_vec = latent_sieve_quantize(latent_vec, bits=self.quant_bits)
+                bits_used = self.quant_bits
 
             latent_vecs_all.append(latent_vec.detach().clone())
 
@@ -534,8 +623,8 @@ class ModelWrapper:
             past = outputs.past_key_values
             last_hidden = outputs.hidden_states[-1][:, -1, :]
             
-            # [THESIS PROBE] Monitor complexity drift during reasoning
-            probe_latent_overhead(last_hidden, f"Latent Step {step}", self.quant_bits)
+            # [THESIS PROBE] Monitor complexity drift; use actual bits when adaptive
+            probe_latent_overhead(last_hidden, f"Latent Step {step}", bits_used)
 
         return past
 

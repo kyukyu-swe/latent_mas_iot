@@ -1,6 +1,6 @@
 # ⚡️ LatentMAS-Hybrid (Fork)
 
-> **Note:** This is a fork of the original [LatentMAS](https://github.com/Gen-Verse/LatentMAS) repository.
+> **Note:** This repository is based on [Hybrid-LatentMAS](https://github.com/nhminle/LatentMAS-Hybrid) by nhminle (which extends [LatentMAS](https://github.com/Gen-Verse/LatentMAS)). The present fork adds **Q-Stitch** thesis work: entropy-gated adaptive quantization (EGSQ), fixed/adaptive bit-width comparison, and bandwidth–accuracy analysis for edge-cloud swarms.
 
 ## 🌟 Contribution: Heterogeneous Latent Communication
 
@@ -50,6 +50,14 @@ python run.py \
   --quant_bits 8 \
   --task gsm8k \
   --prompt sequential
+```
+
+### Q-Stitch: Adaptive Sieve (EGSQ)
+
+For thesis work (entropy-gated bit-width), use `--adaptive_sieve`. Bit-rate is chosen per step from latent entropy: high entropy → 16-bit, low → 2-bit. See `THESIS_ROADMAP.md` for objectives and phases.
+
+```bash
+python run.py --method latent_mas_hybrid --adaptive_sieve --entropy_high_threshold 6.5 --entropy_low_threshold 4.5 --task gsm8k
 ```
 
 ---

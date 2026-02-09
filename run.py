@@ -41,8 +41,12 @@ def write_detailed_log(
     args: argparse.Namespace,
     preds: List[Dict],
     quant_bits: int = None,
+    *,
+    accuracy: float = None,
+    correct: int = None,
+    total_time_sec: float = None,
 ) -> None:
-    """Write detailed log file similar to example_logs format."""
+    """Write detailed log file: config, per-problem details, and optional SUMMARY for paper table."""
     with open(log_path, "w", encoding="utf-8") as f:
         # Write header with configuration
         f.write(f"  method: {args.method}\n")
@@ -95,6 +99,21 @@ def write_detailed_log(
             f.write(
                 f"Result: Pred={res.get('prediction')} | Gold={res.get('gold')} | OK={res.get('correct')}\n"
             )
+
+        # Summary block for paper table (accuracy, time, etc.)
+        if accuracy is not None and correct is not None and total_time_sec is not None:
+            n = len(preds)
+            time_per_sample = total_time_sec / n if n else 0.0
+            f.write("\n")
+            f.write("=" * 40 + "\n")
+            f.write("SUMMARY (for publication runbook Table 1)\n")
+            f.write("=" * 40 + "\n")
+            f.write(f"  accuracy: {accuracy:.4f}\n")
+            f.write(f"  correct: {correct}\n")
+            f.write(f"  total: {n}\n")
+            f.write(f"  total_time_sec: {total_time_sec:.2f}\n")
+            f.write(f"  time_per_sample_sec: {time_per_sample:.4f}\n")
+            f.write("=" * 40 + "\n")
 
 
 # Main processing function for each batch
@@ -279,6 +298,24 @@ def main():
         "--compare_quantizations",
         action="store_true",
         help="Run once for 16-, 8-, 4-, and 2-bit and write one comparison table to logs/quantization_comparison.log",
+    )
+    # EGSQ Adaptive Sieve (Q-Stitch Phase 2)
+    parser.add_argument(
+        "--adaptive_sieve",
+        action="store_true",
+        help="Enable entropy-gated adaptive bit-width (EGSQ). Overrides fixed quant_bits per step.",
+    )
+    parser.add_argument(
+        "--entropy_high_threshold",
+        type=float,
+        default=6.5,
+        help="EGSQ: entropy above this -> use 16-bit (complex reasoning).",
+    )
+    parser.add_argument(
+        "--entropy_low_threshold",
+        type=float,
+        default=4.5,
+        help="EGSQ: entropy below this -> use 2-bit (max efficiency).",
     )
 
     args = parser.parse_args()
@@ -511,6 +548,29 @@ def main():
             ensure_ascii=False,
         )
     )
+
+    # Save detailed log under logs/<method>/; each run gets its own file (no overwrite)
+    # For latent_mas_hybrid: suffix _16bit, _8bit, _adaptive etc. so 16-bit, adaptive, etc. don't overwrite
+    log_dir = os.path.join(os.getcwd(), "logs", args.method)
+    os.makedirs(log_dir, exist_ok=True)
+    if args.method == "latent_mas_hybrid":
+        if getattr(args, "adaptive_sieve", False):
+            suffix = "_adaptive"
+        else:
+            suffix = f"_{getattr(args, 'quant_bits', 16)}bit"
+        log_basename = f"{args.task}_n{args.max_samples}{suffix}.log"
+    else:
+        log_basename = f"{args.task}_n{args.max_samples}.log"
+    detailed_log_path = os.path.join(log_dir, log_basename)
+    write_detailed_log(
+        detailed_log_path,
+        args,
+        preds,
+        accuracy=acc,
+        correct=correct,
+        total_time_sec=total_time,
+    )
+    print(f"Detailed log saved to {detailed_log_path}")
 
 
 if __name__ == "__main__":
