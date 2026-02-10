@@ -255,6 +255,8 @@ def _ensure_pad_token(tokenizer: AutoTokenizer) -> None:
             tokenizer.pad_token = tokenizer.eos_token
         else:
             tokenizer.add_special_tokens({"pad_token": "<pad>"})
+    # Decoder-only models: left-padding for correct batched generation (avoids "right-padding detected" warning and stuck/wrong outputs)
+    tokenizer.padding_side = "left"
 
 
 def _past_length(past_key_values) -> int:

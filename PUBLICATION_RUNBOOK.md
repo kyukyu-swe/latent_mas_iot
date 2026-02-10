@@ -89,9 +89,9 @@ Use **3B** for hybrid sanity (fits 24GB easily). If you have 2 GPUs or 40GB, you
 
 ```bash
 python run.py --method latent_mas_hybrid \
-  --model_name Qwen/Qwen2.5-3B-Instruct \
-  --agent_models Qwen/Qwen2.5-3B-Instruct Qwen/Qwen2.5-3B-Instruct Qwen/Qwen2.5-3B-Instruct \
-  --task gsm8k --max_samples 2 --latent_steps 4 --quant_bits 8 --latent_space_realign
+  --model_name Qwen/Qwen2.5-7B-Instruct \
+  --agent_models Qwen/Qwen2.5-7B-Instruct Qwen/Qwen2.5-3B-Instruct Qwen/Qwen2.5-7B-Instruct Qwen/Qwen2.5-7B-Instruct \
+  --task gsm8k --max_samples -1 --latent_steps 4 --latent_space_realign
 ```
 
 Then one adaptive run:
@@ -186,6 +186,8 @@ cp logs/quantization_comparison.log $LOGDIR/
 ```
 
 ### C.5 EGSQ adaptive sieve
+
+**Note:** Use both `--latent_space_realign` and `--adaptive_sieve` with a **space** between them (not `--adaptive_sievelatent_space_realign`).
 
 ```bash
 python run.py --method latent_mas_hybrid \
